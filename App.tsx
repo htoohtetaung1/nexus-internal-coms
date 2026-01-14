@@ -8,11 +8,14 @@ import Announcements from './components/Announcements';
 import Settings from './components/Settings';
 import Login from './components/Login';
 import Register from './components/Register';
+import AdminLogin from './components/AdminLogin';
+import AdminDashboard from './components/AdminDashboard';
 import { Menu, LogOut } from 'lucide-react';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authView, setAuthView] = useState<'login' | 'register'>('login');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [authView, setAuthView] = useState<'login' | 'register' | 'admin-login'>('login');
   const [currentView, setCurrentView] = useState('feed');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -32,10 +35,17 @@ const App: React.FC = () => {
 
   const handleLogin = () => {
     setIsAuthenticated(true);
+    setIsAdmin(false);
+  };
+
+  const handleAdminLogin = () => {
+    setIsAuthenticated(true);
+    setIsAdmin(true);
   };
 
   const handleLogout = () => {
     setIsAuthenticated(false);
+    setIsAdmin(false);
     setCurrentView('feed');
     setAuthView('login');
     setMobileMenuOpen(false);
@@ -62,14 +72,29 @@ const App: React.FC = () => {
         />
       );
     }
+    if (authView === 'admin-login') {
+      return (
+        <AdminLogin 
+          onLogin={handleAdminLogin}
+          onSwitchToUserLogin={() => setAuthView('login')}
+        />
+      );
+    }
     return (
       <Login 
         onLogin={handleLogin} 
         onSwitchToRegister={() => setAuthView('register')} 
+        onSwitchToAdmin={() => setAuthView('admin-login')}
       />
     );
   }
 
+  // Admin View
+  if (isAdmin) {
+    return <AdminDashboard onLogout={handleLogout} />;
+  }
+
+  // User View
   return (
     <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
       {/* Sidebar for Desktop */}

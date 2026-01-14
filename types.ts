@@ -1,3 +1,4 @@
+
 export enum MessageType {
   ANNOUNCEMENT = 'ANNOUNCEMENT',
   ALERT = 'ALERT',
@@ -11,6 +12,8 @@ export enum Department {
   SALES = 'Sales',
   MARKETING = 'Marketing',
   EXECUTIVE = 'Executive',
+  PRODUCT = 'Product',
+  IT = 'IT Support'
 }
 
 export interface User {
@@ -18,6 +21,10 @@ export interface User {
   name: string;
   avatar: string;
   role: string;
+  email?: string;
+  department?: Department | string;
+  status?: 'Active' | 'Inactive';
+  joinDate?: string;
 }
 
 export interface Post {
@@ -25,6 +32,7 @@ export interface Post {
   type: MessageType;
   author: User;
   content: string;
+  image?: string;
   timestamp: string;
   department: Department;
   likes: number;

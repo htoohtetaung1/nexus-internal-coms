@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { Lock, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Lock, ArrowRight, ShieldCheck, Shield } from 'lucide-react';
 
 interface LoginProps {
   onLogin: () => void;
   onSwitchToRegister: () => void;
+  onSwitchToAdmin: () => void;
 }
 
-const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister }) => {
+const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister, onSwitchToAdmin }) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleDemoLogin = () => {
@@ -94,11 +95,18 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister }) => {
              )}
            </button>
         </div>
-        <div className="bg-slate-50 p-4 text-center border-t border-slate-100">
-          <p className="text-xs text-slate-400 flex items-center justify-center gap-1.5">
+        <div className="bg-slate-50 p-4 flex justify-between items-center border-t border-slate-100">
+          <p className="text-xs text-slate-400 flex items-center gap-1.5">
             <ShieldCheck size={14} />
-            Protected by Enterprise SSO • v2.4.0
+            SSO Secured
           </p>
+          <button 
+            onClick={onSwitchToAdmin}
+            className="text-xs font-bold text-slate-400 hover:text-slate-600 flex items-center gap-1 transition-colors"
+          >
+            <Shield size={12} />
+            Admin Login
+          </button>
         </div>
       </div>
     </div>

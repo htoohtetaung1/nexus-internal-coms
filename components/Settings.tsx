@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Moon, Sun, Camera, User, Mail, Building, Save } from 'lucide-react';
+import { Moon, Sun, Camera, User, Mail, Building, Save, Lock, ShieldCheck, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface SettingsProps {
   isDarkMode: boolean;
@@ -9,6 +9,14 @@ interface SettingsProps {
 const Settings: React.FC<SettingsProps> = ({ isDarkMode, toggleTheme }) => {
   const [profileImage, setProfileImage] = useState("https://picsum.photos/200/200");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Password state
+  const [passwords, setPasswords] = useState({
+    current: '',
+    new: '',
+    confirm: ''
+  });
+  const [passwordStatus, setPasswordStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -18,6 +26,36 @@ const Settings: React.FC<SettingsProps> = ({ isDarkMode, toggleTheme }) => {
         setProfileImage(reader.result as string);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPasswords({ ...passwords, [e.target.name]: e.target.value });
+    if (passwordStatus !== 'idle') setPasswordStatus('idle');
+  };
+
+  const handleUpdatePassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwords.new !== passwords.confirm) {
+        setPasswordStatus('error');
+        return;
+    }
+    if (!passwords.current || !passwords.new) return;
+    
+    // Simulate API delay
+    const btn = e.currentTarget.querySelector('button');
+    if (btn) {
+        const originalText = btn.innerText;
+        btn.innerText = "Updating...";
+        // Disable temporarily
+        btn.disabled = true;
+
+        setTimeout(() => {
+            setPasswordStatus('success');
+            setPasswords({ current: '', new: '', confirm: '' });
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }, 1000);
     }
   };
 
@@ -77,6 +115,92 @@ const Settings: React.FC<SettingsProps> = ({ isDarkMode, toggleTheme }) => {
                  Save Changes
               </button>
            </div>
+        </section>
+
+        {/* Security Section */}
+        <section className="bg-white dark:bg-slate-900 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-800 transition-colors duration-200">
+           <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold">Security & Password</h3>
+              <div className="hidden sm:flex items-center gap-2 text-xs font-medium text-green-600 bg-green-50 dark:bg-green-900/20 dark:text-green-400 px-3 py-1 rounded-full">
+                  <ShieldCheck size={14} />
+                  <span>2FA Enabled</span>
+              </div>
+           </div>
+           
+           <form onSubmit={handleUpdatePassword} className="max-w-2xl">
+              <div className="space-y-4">
+                 <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Current Password</label>
+                    <div className="relative">
+                       <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                       <input 
+                         type="password" 
+                         name="current"
+                         value={passwords.current}
+                         onChange={handlePasswordChange}
+                         className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-blue-500 outline-none transition-colors dark:text-white"
+                         placeholder="••••••••" 
+                       />
+                    </div>
+                 </div>
+                 
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">New Password</label>
+                        <div className="relative">
+                           <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                           <input 
+                             type="password" 
+                             name="new"
+                             value={passwords.new}
+                             onChange={handlePasswordChange}
+                             className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-blue-500 outline-none transition-colors dark:text-white"
+                             placeholder="New password" 
+                           />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Confirm Password</label>
+                        <div className="relative">
+                           <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                           <input 
+                             type="password" 
+                             name="confirm"
+                             value={passwords.confirm}
+                             onChange={handlePasswordChange}
+                             className={`w-full pl-10 pr-4 py-2.5 rounded-lg border ${passwordStatus === 'error' ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-blue-500'} bg-slate-50 dark:bg-slate-800 outline-none transition-colors dark:text-white`}
+                             placeholder="Confirm new password" 
+                           />
+                        </div>
+                    </div>
+                 </div>
+              </div>
+
+              {/* Status Messages */}
+              {passwordStatus === 'error' && (
+                  <div className="mt-4 flex items-center gap-2 text-sm text-red-600 dark:text-red-400 animate-fade-in">
+                      <AlertCircle size={16} />
+                      New passwords do not match.
+                  </div>
+              )}
+              {passwordStatus === 'success' && (
+                  <div className="mt-4 flex items-center gap-2 text-sm text-green-600 dark:text-green-400 animate-fade-in">
+                      <CheckCircle size={16} />
+                      Password updated successfully.
+                  </div>
+              )}
+
+              <div className="mt-6">
+                  <button 
+                    type="submit"
+                    disabled={!passwords.current || !passwords.new || !passwords.confirm}
+                    className="flex items-center gap-2 bg-slate-800 dark:bg-slate-700 text-white px-5 py-2.5 rounded-lg hover:bg-slate-900 dark:hover:bg-slate-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                     <Lock size={16} />
+                     Update Password
+                  </button>
+              </div>
+           </form>
         </section>
 
         {/* Appearance Section */}

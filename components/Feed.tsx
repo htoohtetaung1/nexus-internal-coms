@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { Filter, MessageCircle, Heart, Share2, MoreHorizontal, ShieldAlert } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Filter, MessageCircle, Heart, Share2, MoreHorizontal, ShieldAlert, Image as ImageIcon, Send, X, Crop } from 'lucide-react';
 import { Post, Department, MessageType } from '../types';
+import ImageCropper from './ImageCropper';
 
-const MOCK_POSTS: Post[] = [
+const INITIAL_POSTS: Post[] = [
   {
     id: '1',
     type: MessageType.ALERT,
@@ -47,14 +48,80 @@ const MOCK_POSTS: Post[] = [
 ];
 
 const Feed: React.FC = () => {
+  const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
   const [filter, setFilter] = useState<Department>(Department.ALL);
+  
+  // Post Creation State
+  const [newPostContent, setNewPostContent] = useState('');
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isCropping, setIsCropping] = useState(false);
+  const [tempImage, setTempImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const filteredPosts = filter === Department.ALL 
-    ? MOCK_POSTS 
-    : MOCK_POSTS.filter(post => post.department === filter || post.department === Department.ALL);
+    ? posts 
+    : posts.filter(post => post.department === filter || post.department === Department.ALL);
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.addEventListener('load', () => {
+        setTempImage(reader.result as string);
+        setIsCropping(true);
+      });
+      reader.readAsDataURL(file);
+      // Reset input so same file can be selected again if needed
+      e.target.value = '';
+    }
+  };
+
+  const handleCropComplete = (croppedImg: string) => {
+    setSelectedImage(croppedImg);
+    setIsCropping(false);
+    setTempImage(null);
+  };
+
+  const handleCreatePost = () => {
+    if (!newPostContent.trim() && !selectedImage) return;
+
+    const newPost: Post = {
+        id: Date.now().toString(),
+        type: MessageType.UPDATE,
+        author: {
+            id: 'u5',
+            name: 'Alex Morgan',
+            avatar: 'https://picsum.photos/40/40',
+            role: 'Product Manager'
+        },
+        content: newPostContent,
+        image: selectedImage || undefined,
+        timestamp: 'Just now',
+        department: Department.PRODUCT, // Defaulting to user's dept
+        likes: 0,
+        comments: 0
+    };
+
+    setPosts([newPost, ...posts]);
+    setNewPostContent('');
+    setSelectedImage(null);
+  };
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
+      {/* Image Cropper Modal */}
+      {isCropping && tempImage && (
+        <ImageCropper 
+            imageSrc={tempImage} 
+            onCropComplete={handleCropComplete} 
+            onCancel={() => {
+                setIsCropping(false);
+                setTempImage(null);
+            }} 
+        />
+      )}
+
+      {/* Header & Filter */}
       <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Company Feed</h2>
@@ -77,6 +144,61 @@ const Feed: React.FC = () => {
         </div>
       </div>
 
+      {/* Create Post Widget */}
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-4 mb-8 transition-colors">
+        <div className="flex gap-4">
+            <img src="https://picsum.photos/40/40" alt="Me" className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700" />
+            <div className="flex-1">
+                <textarea 
+                    value={newPostContent}
+                    onChange={(e) => setNewPostContent(e.target.value)}
+                    placeholder="What's happening in your department?" 
+                    className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none text-slate-700 dark:text-slate-200 resize-none h-24 transition-colors"
+                />
+                
+                {selectedImage && (
+                    <div className="mt-3 relative w-fit group">
+                        <img src={selectedImage} alt="Selected" className="h-32 rounded-lg border border-slate-200 dark:border-slate-700" />
+                        <button 
+                            onClick={() => setSelectedImage(null)}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
+                        >
+                            <X size={14} />
+                        </button>
+                    </div>
+                )}
+
+                <div className="flex justify-between items-center mt-3">
+                    <div className="flex gap-2">
+                        <button 
+                            onClick={() => fileInputRef.current?.click()}
+                            className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium"
+                        >
+                            <ImageIcon size={18} />
+                            <span>Photo</span>
+                        </button>
+                        <input 
+                            type="file" 
+                            ref={fileInputRef} 
+                            className="hidden" 
+                            accept="image/*" 
+                            onChange={handleImageSelect} 
+                        />
+                    </div>
+                    <button 
+                        onClick={handleCreatePost}
+                        disabled={!newPostContent.trim() && !selectedImage}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                        <span>Post Update</span>
+                        <Send size={16} />
+                    </button>
+                </div>
+            </div>
+        </div>
+      </div>
+
+      {/* Feed Stream */}
       <div className="space-y-6">
         {filteredPosts.map((post) => (
           <div key={post.id} className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-md transition-all duration-200">
@@ -108,10 +230,16 @@ const Feed: React.FC = () => {
                 </div>
               )}
               
-              <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">{post.content}</p>
+              <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line mb-3">{post.content}</p>
+
+              {post.image && (
+                  <div className="mb-3 rounded-lg overflow-hidden border border-slate-100 dark:border-slate-800">
+                      <img src={post.image} alt="Post attachment" className="w-full h-auto object-cover max-h-96" />
+                  </div>
+              )}
               
               {post.tags && (
-                <div className="mt-3 flex gap-2">
+                <div className="flex gap-2">
                   {post.tags.map(tag => (
                     <span key={tag} className="text-blue-600 dark:text-blue-400 text-sm hover:underline cursor-pointer">{tag}</span>
                   ))}
